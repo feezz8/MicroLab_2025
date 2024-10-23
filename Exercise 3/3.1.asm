@@ -6,7 +6,7 @@
 ;
 .include"m328PBdef.inc"
 .def DC_VALUE = r18
-.equ X1 = 300
+//.equ X1 = 300
 
 .org 0x00
     rjmp reset
@@ -35,7 +35,7 @@ reset:
     ldi r16, (1 << WGM10) | (1 << COM1A1)
     sts TCCR1A, r16                    
     ldi r16, (1 << WGM12) | (1<<CS10)
-    sts TCCR1B, r16                         ; Fast PWM 8-bit, prescalar = 1, non-inverse, connected to PB1
+    sts TCCR1B, r16                         ; Fast PWM 8-bit, prescaler = 1, non-inverse, connected to PB1
     ldi DC_VALUE, 7			    ; 50% duty cycle (for 8-bit, max 255) / 7th position on the table
     ldi ZL, low(table*2)
     ldi ZH, high(table*2)
@@ -45,12 +45,12 @@ reset:
 
 
 MAIN:
-    out PORTC, DC_VALUE ;;;;
+    ;out PORTC, DC_VALUE 
     in r16, PIND
     
-wait_to_unpress:
+wait_to_unpres:
     in r19, PIND
-    cpi r19, 0xFF
+    cpi r19, 0xFF                ;keep looping while button is still pressed
     brne wait_to_unpress
     
     sbrs r16, 03			    ; If PD3 is pressed then add 8%
@@ -62,7 +62,7 @@ wait_to_unpress:
 ADD8:
     cpi DC_VALUE, 13			    ; Check if we reached max value
     breq MAIN				    
-    inc DC_VALUE			    ; Next table location
+    inc DC_VALUE			       ; Next table location
     ldi ZL, low(table*2)		    ; Load low byte of the table address into Z register
     ldi ZH, high(table*2)		    ; Load high byte of the table address into Z register
     add ZL, DC_VALUE			    ; Add the index (in r16) to the Z register	
@@ -82,7 +82,7 @@ SUB8:
     rjmp MAIN
     
         
-
+/*
 ; Delay Routine for X1 msec
 wait_x_msec:
     ldi r16, 16
@@ -113,3 +113,4 @@ loop4:
     pop r25               ; (2 cycles)
     pop r24               ; (2 cycles) Restore r24:r25
     ret                   ; 4 cycles
+*/
