@@ -1,42 +1,41 @@
-/*
- * main.c
- *
- * Created: 10/19/2024 4:21:39 PM
- *  Author: Konstantinos
- */ 
-
-#define F_CPU 1600000UL
+#define F_CPU 16000000UL
 #include "avr/io.h"
 #include <util/delay.h>
 
 void adc_init(void) {
-	// Configure ADC
-	// Set reference voltage to AVcc (with external capacitor on AREF)
-	ADMUX |= (1 << REFS0);
+	// Initialize ADC
+	// Set reference voltage to AVcc (with external capacitor at AREF pin)
+	ADMUX = (1 << REFS0);
+    
+	// Set input channel to ADC1 (=0001)
+	ADMUX |= (1 << MUX0);
 	
-	//Set ADC left adjusted
-	ADMUX |= (1 << ADLAR);
-	
-	// Set input channel to ADC1 (adjust according to your pin configuration)
-	ADMUX |= (1 << MUX0);  //0001 = ADC1
-	
-	// Set ADC prescaler to 64 (for 16 MHz clock, ADC clock = 16MHz / 64 = 250 kHz)
-	// This ensures the ADC clock is within the recommended range (50 kHz - 200 kHz)
-	ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0);
+	// Set ADC pre-scaler to 128 (for 16 MHz clock, ADC clock = 16MHz /128 = 125 kHz - within the range)
+	ADCSRA = (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0);
 	
 	// Enable the ADC
 	ADCSRA |= (1 << ADEN);
 }
 
 uint16_t adc_read(void) {
-	// Start the conversion
+	// Set ADSC flag of ADSCRA
 	ADCSRA |= (1 << ADSC);
 	
-	// Wait for the conversion to complete (ADSC becomes '0' when the conversion is done)
-	while (ADCSRA & (1 << ADSC));
-	
-	// Return the 10-bit ADC result
-	return ADC;
+	// Wait for ADSC flag to become '0'
+    while (ADCSRA & (1 << ADSC));
+    
+    //
+    /* if we want to be 1000% certain use the following code
+    uint16_t result = 0x0000, dummy = 0x0000;
+    result = result | ADCL;
+    dummy = dummy | ADCH;
+    dummy = dummy << 8;
+    result = result | dummy;
+	return result;
+     */ 
+    
+    //Return 10-bit result
+    return ADC;
 }
 
 int main(){
@@ -49,59 +48,65 @@ int main(){
 		DC_VALUES[i] = (8 + i*20);
 	}
 
-	/*	set TMR1A in fast PWM 8 bit mode with non inverted output
-	and prescale  = 256
-	*/
+	//	set fast non-inverted PWM 8 bit and pre-scale  = 1
 	TCCR1A = (1 << WGM10) | (1 << COM1A1);
-	TCCR1B = (1 << WGM12) | (1 << CS12);
+	TCCR1B = (1 << WGM12) | (1 << CS10);
 	
-	DDRB |= 0b00011111;
-	DDRD |= 0b00011111;		//PD4-PD0 output				
+    DDRB = 0xFF;       //PB5-0 as output
+    DDRC= 0x00;              //PORTC as input
+	DDRD = 0b00011111;		//PD4-PD0 output the rest is input			
 	int index = 7;			//Duty Cycle =  50%
+    OCR1AL = DC_VALUES[index];
 	
 	uint16_t ADC_RESULT = 0;
 	int reset = 0;
 	
-	while(1){		
-		if(reset == 15){
+	while(1){	
+		if(reset == 16){
 			reset = 0;
 			ADC_RESULT = (ADC_RESULT >> 4); //Divide by 2^4 = 16
-			switch(ADC_RESULT){
-				default:					//bigger than 800
-					/*turn on PD4*/
-				case 0 ... 200:
-				/*turn on PD0*/
-				case 201 ... 400:
-				/*turn on PD1*/
-				case 401 ... 600:
-				/*turn on PD2*/
-				case 601 ... 800:
-				/*turn on PD3*/				
-			}
+            if (ADC_RESULT >= 0 & ADC_RESULT <= 200) {
+                PORTD = 0x01;
+            }
+            else if(ADC_RESULT > 200 & ADC_RESULT <= 400) {
+                PORTD = 0x02;
+            }
+            else if(ADC_RESULT > 400 & ADC_RESULT <= 600) {
+                PORTD = 0x04;
+            }
+            else if(ADC_RESULT > 600 & ADC_RESULT <= 800) {
+                PORTD = 0x08;
+            }
+            else {
+                PORTD = 0x10;
+            }
+            ADC_RESULT =0;
 		}
-		
-		
 		_delay_ms(100);					//Call delay
 		ADC_RESULT += adc_read();		//Read ADC_value
 		reset++;						//Keep track of how many values we have
 		
-		
-		/*Increase or decrease the Duty Cycle
-		based on which button is pressed*/												
-		if(PORTD == 0x01){
+        /*Increase or decrease the Duty Cycle
+		based on which button is pressed*/
+        unsigned char d = PIND, check = PIND;
+        
+        //wait for the button to be un-pressed
+        while (!(check & (1 << PD5)) | !(check & (1<<PD6))) {
+            check = PIND;
+        }
+        
+        unsigned char dummy5 = d &0x20;
+        unsigned char dummy6 = d &0x40;
+
+		if((dummy5 ==0) && index < 12){ // with PD5 we increase
 			index++;
-			if(index == 13){
-				continue;
-			}
 			OCR1AL = DC_VALUES[index];
 		}
-		if(PORTD == 0x02){
+		if((dummy6 ==0) && index > 0){ // with PD6 we decrease
 			index--;
-			if(index == 0){
-				continue;
-			}			
 			OCR1AL = DC_VALUES[index];
-		}
+        }
+														
+		
 	}
 }
-
