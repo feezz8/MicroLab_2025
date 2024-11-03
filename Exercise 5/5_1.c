@@ -10,7 +10,7 @@ int main() {
     DDRD = 0xFF;
     unsigned char A,B,C,D, F0, F1, input, result;
     twi_init();
-    PCA9555_0_write(REG_CONFIGURATION_0, 0xFF); //Set EXT_PORT0 as input
+    PCA9555_0_write(REG_CONFIGURATION_0, 0x00); //Set EXT_PORT0 as output
     
     while(1) {
         input = PINB;
