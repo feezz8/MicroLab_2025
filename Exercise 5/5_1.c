@@ -24,6 +24,6 @@ int main() {
         F1 = (F1 & 0x01) << 1;
         result = F0 | F1;
         //Maybe I need PCA Config output to take it to LEDs?
-        PCA9555_0_write(REG_INPUT_0, result);
+        PCA9555_0_write(REG_OUTPUT_0, result);
     }
 }
