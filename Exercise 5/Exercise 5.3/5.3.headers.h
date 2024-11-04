@@ -12,14 +12,14 @@
 
 // PCA9555 REGISTERS
 typedef enum {
-REG_INPUT_0 = 0,
-REG_INPUT_1 = 1,
-REG_OUTPUT_0 = 2,
-REG_OUTPUT_1 = 3,
-REG_POLARITY_INV_0 = 4,
-REG_POLARITY_INV_1 = 5,
-REG_CONFIGURATION_0 = 6,
-REG_CONFIGURATION_1 = 7
+	REG_INPUT_0 = 0,
+	REG_INPUT_1 = 1,
+	REG_OUTPUT_0 = 2,
+	REG_OUTPUT_1 = 3,
+	REG_POLARITY_INV_0 = 4,
+	REG_POLARITY_INV_1 = 5,
+	REG_CONFIGURATION_0 = 6,
+	REG_CONFIGURATION_1 = 7
 } PCA9555_REGISTERS;
 
 //----------- Master Transmitter/Receiver -------------------
@@ -43,6 +43,8 @@ REG_CONFIGURATION_1 = 7
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
+#define F_CPU 16000000UL
+
 
 
 void twi_init(void);
@@ -65,5 +67,4 @@ void lcd_init ();
 
 
 
-#endif	
-
+#endif
