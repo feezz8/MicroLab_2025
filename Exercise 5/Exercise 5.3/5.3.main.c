@@ -7,7 +7,7 @@ int main() {
     twi_init();
     PCA9555_0_write(REG_CONFIGURATION_1, 0x00); //Set EXT_PORT1 as output
     lcd_init();
-    char fezz1[] = "Konstantinos", fezz2[] = "Fezzos", oar1[] = "Odysseas", oar2[] = "Tsouknidas";    
+    char fezz1[] = "Konstantinos", fezz2[] = "Fezos", oar1[] = "Odysseas", oar2[] = "Tsouknidas";    
     while (1) {
         lcd_clear_display();
         for (int i=0; i<12; i++){
