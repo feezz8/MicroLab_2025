@@ -155,61 +155,67 @@ uint8_t PCA9555_0_read(PCA9555_REGISTERS reg)
     return ret_val;
 }
 
-void write_2_nibbles (uint8_t input) {
-    unsigned char pind = PCA9555_0_read(REG_OUTPUT_1), temp = input & 0xF0;
-    pind = pind & 0x0F;
-    uint8_t dummy;
-    //PORTD = pind + temp;
-    PCA9555_0_write(REG_OUTPUT_1, pind+temp);
-    
-    //PORTD |= (1<<PD3);
-    dummy = PCA9555_0_read(REG_OUTPUT_1);
-    dummy |= 0x08;
-    PCA9555_0_write(REG_OUTPUT_1, dummy);
+void write_2_nibbles_data (uint8_t input) {
+    uint8_t temp = input & 0xF0;
+    temp |= 0x04;
+
+    temp |= 0x08;
+    PCA9555_0_write(REG_OUTPUT_1, temp);
     asm("nop");
     asm("nop");
-    //PORTD &= ~(1 << PD3); 
-    dummy = PCA9555_0_read(REG_OUTPUT_1);
-    dummy &= ~(0x08);
-    PCA9555_0_write(REG_OUTPUT_1, dummy);
-    
+    temp &= ~(0x08);
+    PCA9555_0_write(REG_OUTPUT_1, temp);
+   
     
     temp = input & 0x0F;
     temp = temp << 4;
-    //PORTD = pind + temp;
-    PCA9555_0_write(REG_OUTPUT_1, pind+temp);
-
+    temp |= 0x04;
     
-    //PORTD |= (1<<PD3);
-    dummy = PCA9555_0_read(REG_OUTPUT_1);
-    dummy |= 0x08;
-    PCA9555_0_write(REG_OUTPUT_1, dummy);
+    temp |= 0x08;
+    PCA9555_0_write(REG_OUTPUT_1, temp);
     asm("nop");
     asm("nop");
-    //PORTD &= ~(1 << PD3);
-    dummy = PCA9555_0_read(REG_OUTPUT_1);
-    dummy &= ~(0x08);
-    PCA9555_0_write(REG_OUTPUT_1, dummy);
+    temp &= ~(0x08);
+    PCA9555_0_write(REG_OUTPUT_1, temp);
     
     return;
 }
 
+void write_2_nibbles_command (uint8_t input) {
+    uint8_t temp = input & 0xF0;
+    //temp |= 0x04;
+
+    temp |= 0x08;
+    PCA9555_0_write(REG_OUTPUT_1, temp);
+    asm("nop");
+    asm("nop");
+    temp &= ~(0x08);
+    PCA9555_0_write(REG_OUTPUT_1, temp);
+   
+    
+    temp = input & 0x0F;
+    temp = temp << 4;
+    //temp |= 0x04;
+    
+    temp |= 0x08;
+    PCA9555_0_write(REG_OUTPUT_1, temp);
+    asm("nop");
+    asm("nop");
+    temp &= ~(0x08);
+    PCA9555_0_write(REG_OUTPUT_1, temp);
+    
+    return;
+}
+
+
 void lcd_data (uint8_t input) {
-    //PORTD |= (1<<PD2);
-    uint8_t dummy = PCA9555_0_read(REG_OUTPUT_1);
-    dummy |= 0x04;
-    PCA9555_0_write(REG_OUTPUT_1, dummy);
-    write_2_nibbles(input);
+    write_2_nibbles_data(input);
     _delay_ms(1);
     return;
 }
 
 void lcd_command (uint8_t input) {
-    //PORTD &= ~(1 << PD2);
-    uint8_t dummy = PCA9555_0_read(REG_OUTPUT_1);
-    dummy &= ~(0x04);
-    PCA9555_0_write(REG_OUTPUT_1, dummy);
-    write_2_nibbles(input);
+    write_2_nibbles_command(input);
     _delay_ms(1);
     return;
 }
@@ -233,32 +239,25 @@ void lcd_init () {
     //PORTD = 0x30;
     PCA9555_0_write(REG_OUTPUT_1, 0x30);
     for (int i=0; i<3; i++) {
-        //PORTD |= (1<<PD3);
-        dummy = PCA9555_0_read(REG_OUTPUT_1);
+        dummy = 0x30;
         dummy |= 0x08;
         PCA9555_0_write(REG_OUTPUT_1, dummy);
         asm("nop");
         asm("nop");
-        //PORTD &= ~(1 << PD3);
-        dummy = PCA9555_0_read(REG_OUTPUT_1);
         dummy &= ~(0x08);
         PCA9555_0_write(REG_OUTPUT_1, dummy);
         _delay_ms(1);
     }
     
-    //PORTD = 0x20;
-    PCA9555_0_write(REG_OUTPUT_1, 0x20);
-    //PORTD |= (1<<PD3);
-    dummy = PCA9555_0_read(REG_OUTPUT_1);
-    dummy &= ~(0x08);
+    dummy = 0x20;
+    dummy |= 0x08;
     PCA9555_0_write(REG_OUTPUT_1, dummy);
     asm("nop");
     asm("nop");
-    //PORTD &= ~(1 << PD3);
-    dummy = PCA9555_0_read(REG_OUTPUT_1);
     dummy &= ~(0x08);
     PCA9555_0_write(REG_OUTPUT_1, dummy);
     _delay_ms(1);
+    
     lcd_command(0x28);
     lcd_command(0x0c);
     lcd_clear_display();
