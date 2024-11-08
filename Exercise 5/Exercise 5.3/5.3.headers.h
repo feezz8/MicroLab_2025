@@ -43,8 +43,6 @@ typedef enum {
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
-#define F_CPU 16000000UL
-
 
 
 void twi_init(void);
