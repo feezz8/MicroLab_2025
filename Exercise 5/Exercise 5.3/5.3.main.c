@@ -22,7 +22,7 @@ int main() {
 		}
 		
 		
-		_delay_ms(50000);
+		_delay_ms(5000);
 		// Now time for the next name
 		lcd_clear_display();
 		for (int i=0; i<8; i++) {
@@ -32,7 +32,7 @@ int main() {
 		for (int i=0; i<10; i++){
 			lcd_data(oar2[i]);
 		}
-		_delay_ms(50000);
+		_delay_ms(5000);
 		
 	}
 	
