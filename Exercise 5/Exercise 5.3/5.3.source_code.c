@@ -7,7 +7,6 @@
 
 uint8_t fake_d = 0x00; //global to simulate PORTD
 
-
 //initialize TWI clock
 void twi_init(void)
 {
@@ -231,6 +230,7 @@ void lcd_data (uint8_t input) {
 	_delay_ms(1);
 	return;
 }
+
 
 void lcd_command (uint8_t input) {
 	
