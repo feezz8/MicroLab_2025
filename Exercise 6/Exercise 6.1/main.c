@@ -1,4 +1,3 @@
-
 /*
  * main.c
  *
@@ -15,25 +14,31 @@
 
 uint16_t pressed_keys = 0; //Holds value for pressed key
 
- uint16_t scan_row(uint8_t row){	 
+ uint8_t scan_row(uint8_t row){	 
 		uint16_t result = 0;
-		PCA9555_0_write(REG_CONFIGURATION_1,row);
+		/*
+		uint8_t temp = 0xFF;
+		temp &= ~(1 << row);
+		PCA9555_0_write(REG_OUTPUT_1,temp);
+		*/
+		PCA9555_0_write(REG_OUTPUT_1,0xFE);
 	    uint8_t input = PCA9555_0_read(REG_INPUT_1);
-        if(input & 0x10) //1st element from row is pressed
+		
+        if((input & 0x10) == 0) //1st element from row is pressed
         {
-			result += 0x10;
+			result |= 0b0001;
         }
-        else if(input & 0x20) // 2nd element from row is pressed
+        if((input & 0x20) == 0) // 2nd element from row is pressed
         {
-			result += 0x20;
+			result |= 0b0010;
         }
-        else if(input & 0x40) //3rd element from row  is pressed
+        if((input & 0x40) == 0) //3rd element from row  is pressed
         {
-			result += 0x40;
+			result |= 0b0100;
         }
-        else if(input & 0x80) //4th element from row is pressed
+        if((input & 0x80) == 0) //4th element from row is pressed
         {
-			result += 0x80;
+			result |= 0b1000;
         }
 		
 	return result;
@@ -41,30 +46,21 @@ uint16_t pressed_keys = 0; //Holds value for pressed key
  
  
  uint16_t scan_keypad(){
-	 uint16_t result;
-	 if(scan_row(0x00) != 0x00){
-		 result += scan_row(0x00);		//Scan 1st row
-	 }
-	 if(scan_row(0x02) != 0x00){
-		 result += scan_row(0x01);		//Scan 2nd row
-	 }
-	 if(scan_row(0x04) != 0x00){
-		 result += scan_row(0x02);		//Scan 3rd row
-	 }
-	 if(scan_row(0x08) != 0x00){
-		 result += scan_row(0x04);		//Scan 4th row
-	 }
+	 uint16_t result = 0;
+	 result |= scan_row(0); 
+	 result |= (scan_row(1) << 4);
+	 result |= (scan_row(2) << 4);
+	 result |= (scan_row(3) << 4);
+
 	 
 	return result;				//Return total buttons pressed
  }
  
- void scan_keypad_rising_edge(){
+/* void scan_keypad_rising_edge(){
 	 uint16_t pressed_keys_temp = 0;
-	 uint16_t pressed_keys_new = 0;
-	 while((pressed_keys_temp = scan_keypad()) != 0x00){
-		 _delay_ms(20);
-		 if((pressed_keys_new = scan_keypad()) != pressed_keys_temp){
-			pressed_keys_temp =- pressed_keys_new;
+	 pressed_keys_temp = scan_keypad();
+	 
+	
 		 }
 	 
 		 pressed_keys =	pressed_keys_temp;	 
@@ -74,21 +70,46 @@ uint16_t pressed_keys = 0; //Holds value for pressed key
 			 
  }
  
-
+*/
  int main(){
-	 
-	twi_init();
-	PCA9555_0_write(REG_CONFIGURATION_1, 0x00); //Set EXT_PORT0 as output
-	lcd_init();
+    twi_init();
+    //Set Port Expander 0 as output
+    PCA9555_0_write(REG_CONFIGURATION_0,0x00);
+    //Set Port Expander 1 [3:0] as output ((and [7:4] as input))
+    PCA9555_0_write(REG_CONFIGURATION_1, 0xF0);
+    uint8_t input;
+    PCA9555_0_write(REG_OUTPUT_1, 0x0E); //maybe
+	//PCA9555_0_write(REG_CONFIGURATION_1, 0x00);
+
+	
+	
 	
 	while(1){
-		
-		
-		scan_keypad_rising_edge();
-		_delay_ms(1000);
-		lcd_data(pressed_keys + '0');
-		_delay_ms(1000);
-		lcd_clear_display();
+        uint8_t input = PCA9555_0_read(REG_INPUT_1);
+        
+        
+        if((input & 0x10) == 0x00) //*
+            // WE ALWAYS GO HERE
+        {
+            PCA9555_0_write(REG_OUTPUT_0, 0x01);
+        }
+        else if((input & 0x20) == 0x00) // 0
+        {
+            PCA9555_0_write(REG_OUTPUT_0, 0x02);
+        }
+        else if((input & 0x40) == 0x00) // #
+        {
+            PCA9555_0_write(REG_OUTPUT_0, 0x04);
+        }
+        else if((input & 0x80) == 0x00) // D
+        {
+            PCA9555_0_write(REG_OUTPUT_0, 0x08);
+        }
+        else
+        {
+            PCA9555_0_write(REG_OUTPUT_0, 0x00);
+        }		
+	
 		
 		
 	}
