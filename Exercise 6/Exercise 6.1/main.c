@@ -1,117 +1,155 @@
-/*
- * main.c
- *
- * Created: 11/8/2024 2:58:34 PM
- *  Author: kosta
- */ 
 #define F_CPU 16000000UL
-#include "5.3.headers.h"
+#include "61header.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
-#include <string.h> 
  
 
-uint16_t pressed_keys = 0; //Holds value for pressed key
+uint16_t pressed_keys = 0;
+uint8_t ascii[16] = {'*', '0', '#', 'D', '7', '8', '9', 'C', '4', '5', '6', 'B', '1', '2', '3', 'A'};
 
- uint8_t scan_row(uint8_t row){	 
-		uint16_t result = 0;
-		/*
-		uint8_t temp = 0xFF;
-		temp &= ~(1 << row);
-		PCA9555_0_write(REG_OUTPUT_1,temp);
-		*/
-		PCA9555_0_write(REG_OUTPUT_1,0xFE);
-	    uint8_t input = PCA9555_0_read(REG_INPUT_1);
-		
-        if((input & 0x10) == 0) //1st element from row is pressed
-        {
-			result |= 0b0001;
-        }
-        if((input & 0x20) == 0) // 2nd element from row is pressed
-        {
-			result |= 0b0010;
-        }
-        if((input & 0x40) == 0) //3rd element from row  is pressed
-        {
-			result |= 0b0100;
-        }
-        if((input & 0x80) == 0) //4th element from row is pressed
-        {
-			result |= 0b1000;
-        }
-		
-	return result;
- }
+uint16_t scan_row(uint8_t row){	 
+    uint16_t result = 0;
+        
+    uint8_t dummy = 0xFF;
+    dummy &= ~(1 << (row-1));
+	PCA9555_0_write(REG_OUTPUT_1,dummy);
+        
+	uint8_t input = PCA9555_0_read(REG_INPUT_1);
+    if((input & 0x10) == 0x00) //1st element from row is pressed
+    {
+        result |= 0x01;
+    }
+    if((input & 0x20) == 0x00) // 2nd element from row is pressed
+    {
+		result |= 0x02;
+    }
+    if((input & 0x40) == 0x00) //3rd element from row  is pressed
+    {
+		result |= 0x04;
+    }
+    if((input & 0x80) == 0x00) //4th element from row is pressed
+    {
+		result |= 0x08;
+    }
+    return result;
+}
  
  
- uint16_t scan_keypad(){
-	 uint16_t result = 0;
-	 result |= scan_row(0); 
-	 result |= (scan_row(1) << 4);
-	 result |= (scan_row(2) << 4);
-	 result |= (scan_row(3) << 4);
+uint16_t scan_keypad(){
+    uint16_t result =0;
+    result |= scan_row(1);		//Scan 1st row
+    result |= (scan_row(2) << 4);		//Scan 2nd row
+    result |= (scan_row(3) << 8);		//Scan 3rd row
+    result |= (scan_row(4) << 12);		//Scan 4th row 
+    return result;				//Return total buttons pressed
+}
+ 
+void scan_keypad_rising_edge(){
+    uint16_t pressed_keys_temp = 0, dummy = 0;   
+    pressed_keys_temp = scan_keypad();
+    _delay_ms(15);
+    dummy = scan_keypad();
+    
+    //Here we take 2 measurements and we only keep the buttons which are pressed in both (Correct??)
+    pressed_keys_temp &= dummy;
+     
+    //Here we only update pressed_keys to only keep keys that are now pressed and weren't before
+    pressed_keys = (~(pressed_keys)) & pressed_keys_temp;
+    
+	return;		 
+}
+ 
+uint8_t keypad_to_ascii() {
+    scan_keypad_rising_edge();
+    uint16_t from_keys = pressed_keys;
+    int counter = 0;
+    while((from_keys & 0x0001) == 0 && counter != 16) {
+        counter++;
+        from_keys = from_keys >> 1;
+    }
+    if(counter == 16){
+        return 0;
+    }
+    return ascii[counter];
+}
 
-	 
-	return result;				//Return total buttons pressed
- }
- 
-/* void scan_keypad_rising_edge(){
-	 uint16_t pressed_keys_temp = 0;
-	 pressed_keys_temp = scan_keypad();
-	 
-	
-		 }
-	 
-		 pressed_keys =	pressed_keys_temp;	 
-	 }
-		
-	return;  
-			 
- }
- 
-*/
- int main(){
+
+
+int main() {
+     
     twi_init();
-    //Set Port Expander 0 as output
-    PCA9555_0_write(REG_CONFIGURATION_0,0x00);
-    //Set Port Expander 1 [3:0] as output ((and [7:4] as input))
-    PCA9555_0_write(REG_CONFIGURATION_1, 0xF0);
-    uint8_t input;
-    PCA9555_0_write(REG_OUTPUT_1, 0x0E); //maybe
-	//PCA9555_0_write(REG_CONFIGURATION_1, 0x00);
+    PCA9555_0_write(REG_CONFIGURATION_0, 0x00); //PORT0 as output (just to send stuff to LEDs)
+	PCA9555_0_write(REG_CONFIGURATION_1, 0xF0); //PORT1[7:3] = input, [3:0] = output
+     
+    DDRB = 0xFF;
+    PORTB = 0x00;
+    uint16_t result;
+    //This checks if scan_row works as intended
+    while(1) {
+        result = scan_row(2);
+        if(result == 0x0004) {
+            PORTB = 0xFF;    
+        }
+        else {
+            PORTB = 0x01;
+        }
+    }
+    
+    //This checks if scan_keypad works as intended
+    while(1) {
+        result = scan_keypad();
+        if (result == 0x0000) {
+            PORTB = 0xFF;
+        }
+        else {
+            PORTB = 0x01;
+        }
+    }
+}
 
-	
-	
-	
-	while(1){
-        uint8_t input = PCA9555_0_read(REG_INPUT_1);
+ /*
+uint8_t keypad_to_ascii() {
+    uint16_t from_keys = 0x8000;
+    int counter = 0;
+    while((from_keys &0x0001) == 0) {
+        counter++;
+        from_keys = from_keys >> 1;
+    }
+    if(counter == 16){
+        return 0;
+    }
+    return ascii[counter];
+}
+
+  * 
+//The following is (correct) main for problem 1
+int main(){
+    twi_init();
+    PCA9555_0_write(REG_CONFIGURATION_0, 0x00); //Set EXT_PORT0 as output (to send stuff to LEDs_
+	PCA9555_0_write(REG_CONFIGURATION_1, 0xF0); //Set EXT_PORT1[7:4] as input and [3:0] as output
+    DDRB = 0xFF;                                //Set PORTB as output
+    PORTB = 0x00;
+    uint8_t reading;
+    
+    while(1) {
+        reading = keypad_to_ascii();
+        if(reading == 'A') {
+            PORTB = 0x01;
+        }
+        else if(reading == '8') {
+            PORTB = 0x02;
+        }
+        else if(reading == '6') {
+            PORTB = 0x04;
+        }
+        else if(reading == '*') {
+            PORTB = 0x08;
+        }
+        else {
+            PORTB = 0x00;
+        }
         
-        
-        if((input & 0x10) == 0x00) //*
-            // WE ALWAYS GO HERE
-        {
-            PCA9555_0_write(REG_OUTPUT_0, 0x01);
-        }
-        else if((input & 0x20) == 0x00) // 0
-        {
-            PCA9555_0_write(REG_OUTPUT_0, 0x02);
-        }
-        else if((input & 0x40) == 0x00) // #
-        {
-            PCA9555_0_write(REG_OUTPUT_0, 0x04);
-        }
-        else if((input & 0x80) == 0x00) // D
-        {
-            PCA9555_0_write(REG_OUTPUT_0, 0x08);
-        }
-        else
-        {
-            PCA9555_0_write(REG_OUTPUT_0, 0x00);
-        }		
-	
-		
-		
-	}
-	 return 0;
- }
+        _delay_ms(100);//Do I need a delay?
+    }
+}*/
