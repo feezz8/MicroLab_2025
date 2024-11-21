@@ -3,7 +3,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
-
+#include <string.h>
 
 uint16_t pressed_keys = 0;
 uint8_t ascii[16] = {'*', '0', '#', 'D', '7', '8', '9', 'C', '4', '5', '6', 'B', '1', '2', '3', 'A'};
@@ -44,7 +44,8 @@ uint16_t scan_keypad(){
     result |= (scan_row(4) << 12);		//Scan 4th row 
     return result;				//Return total buttons pressed
 }
- 
+
+/*
 void scan_keypad_rising_edge(){
     uint16_t pressed_keys_temp = 0, dummy = 0;   
     pressed_keys_temp = scan_keypad();
@@ -58,11 +59,27 @@ void scan_keypad_rising_edge(){
     pressed_keys = (~(pressed_keys)) & pressed_keys_temp;
     
 	return;		 
+}*/
+
+uint16_t scan_keypad_rising_edge(){
+    uint16_t pressed_keys_temp = 0, dummy = 0, result =0;;   
+    pressed_keys_temp = scan_keypad();
+    _delay_ms(15);
+    dummy = scan_keypad();
+    
+    //Here we take 2 measurements and we only keep the buttons which are pressed in both (Correct??)
+    pressed_keys_temp &= dummy;
+    
+    //pressed_keys = pressed_keys_temp;
+     
+    //Here we only update pressed_keys to only keep keys that are now pressed and weren't before
+    //result = (~(pressed_keys)) & pressed_keys_temp;
+    result = pressed_keys_temp;
+	return result;		 
 }
  
 uint8_t keypad_to_ascii() {
-    scan_keypad_rising_edge();
-    uint16_t from_keys = pressed_keys;
+    uint16_t from_keys =scan_keypad_rising_edge();
     int counter = 0;
     while((from_keys & 0x0001) == 0 && counter != 16) {
         counter++;
@@ -83,12 +100,12 @@ int main() {
     lcd_clear_display();
     uint8_t reading;
     char no_keys1[] = "PRESS SOME KEYS", no_keys2[] = "ALREADY";
-    for(int i=0; i<sizeof(no_keys1); i++)
+    for(int i=0; i<strlen(no_keys1); i++)
     {
         lcd_data(no_keys1[i]);
     }
     lcd_change_line();
-    for(int i=0; i<sizeof(no_keys2); i++)
+    for(int i=0; i<strlen(no_keys2); i++)
     {
         lcd_data(no_keys2[i]);
     }
