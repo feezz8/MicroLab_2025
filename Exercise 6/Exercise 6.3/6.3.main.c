@@ -45,24 +45,25 @@ uint16_t scan_keypad(){
     return result;				//Return total buttons pressed
 }
  
-void scan_keypad_rising_edge(){
-    uint16_t pressed_keys_temp = 0, dummy = 0;   
+uint16_t scan_keypad_rising_edge(){
+    uint16_t pressed_keys_temp = 0, dummy = 0, result =0;;   
     pressed_keys_temp = scan_keypad();
     _delay_ms(15);
     dummy = scan_keypad();
     
     //Here we take 2 measurements and we only keep the buttons which are pressed in both (Correct??)
     pressed_keys_temp &= dummy;
+    
+    //pressed_keys = pressed_keys_temp;
      
     //Here we only update pressed_keys to only keep keys that are now pressed and weren't before
-    pressed_keys = (~(pressed_keys)) & pressed_keys_temp;
-    
-	return;		 
+    //result = (~(pressed_keys)) & pressed_keys_temp;
+    result = pressed_keys_temp;
+	return result;		 
 }
  
 uint8_t keypad_to_ascii() {
-    scan_keypad_rising_edge();
-    uint16_t from_keys = pressed_keys;
+    uint16_t from_keys = scan_keypad_rising_edge();
     int counter = 0;
     while((from_keys & 0x0001) == 0 && counter != 16) {
         counter++;
