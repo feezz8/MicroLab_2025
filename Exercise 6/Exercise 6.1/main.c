@@ -7,6 +7,7 @@
 
 uint16_t pressed_keys = 0;
 uint8_t ascii[16] = {'*', '0', '#', 'D', '7', '8', '9', 'C', '4', '5', '6', 'B', '1', '2', '3', 'A'};
+//uint16_t pressed_keys_stamos = 0;
 
 uint16_t scan_row(uint8_t row){	 
     uint16_t result = 0;
@@ -44,25 +45,27 @@ uint16_t scan_keypad(){
     result |= (scan_row(4) << 12);		//Scan 4th row 
     return result;				//Return total buttons pressed
 }
- 
-void scan_keypad_rising_edge(){
-    uint16_t pressed_keys_temp = 0, dummy = 0;   
+
+uint16_t scan_keypad_rising_edge(){
+    uint16_t pressed_keys_temp = 0, dummy = 0, result =0;;   
     pressed_keys_temp = scan_keypad();
     _delay_ms(15);
     dummy = scan_keypad();
     
     //Here we take 2 measurements and we only keep the buttons which are pressed in both (Correct??)
     pressed_keys_temp &= dummy;
+    
+    //pressed_keys = pressed_keys_temp;
      
     //Here we only update pressed_keys to only keep keys that are now pressed and weren't before
-    pressed_keys = (~(pressed_keys)) & pressed_keys_temp;
-    
-	return;		 
+    //result = (~(pressed_keys)) & pressed_keys_temp;
+    result = pressed_keys_temp;
+	return result;		 
 }
+
  
 uint8_t keypad_to_ascii() {
-    scan_keypad_rising_edge();
-    uint16_t from_keys = pressed_keys;
+    uint16_t from_keys = scan_keypad_rising_edge();
     int counter = 0;
     while((from_keys & 0x0001) == 0 && counter != 16) {
         counter++;
@@ -74,55 +77,6 @@ uint8_t keypad_to_ascii() {
     return ascii[counter];
 }
 
-
-
-int main() {
-     
-    twi_init();
-    PCA9555_0_write(REG_CONFIGURATION_0, 0x00); //PORT0 as output (just to send stuff to LEDs)
-	PCA9555_0_write(REG_CONFIGURATION_1, 0xF0); //PORT1[7:3] = input, [3:0] = output
-     
-    DDRB = 0xFF;
-    PORTB = 0x00;
-    uint16_t result;
-    //This checks if scan_row works as intended
-    while(1) {
-        result = scan_row(2);
-        if(result == 0x0004) {
-            PORTB = 0xFF;    
-        }
-        else {
-            PORTB = 0x01;
-        }
-    }
-    
-    //This checks if scan_keypad works as intended
-    while(1) {
-        result = scan_keypad();
-        if (result == 0x0000) {
-            PORTB = 0xFF;
-        }
-        else {
-            PORTB = 0x01;
-        }
-    }
-}
-
- /*
-uint8_t keypad_to_ascii() {
-    uint16_t from_keys = 0x8000;
-    int counter = 0;
-    while((from_keys &0x0001) == 0) {
-        counter++;
-        from_keys = from_keys >> 1;
-    }
-    if(counter == 16){
-        return 0;
-    }
-    return ascii[counter];
-}
-
-  * 
 //The following is (correct) main for problem 1
 int main(){
     twi_init();
@@ -131,6 +85,8 @@ int main(){
     DDRB = 0xFF;                                //Set PORTB as output
     PORTB = 0x00;
     uint8_t reading;
+    DDRD = 0xFF;
+    PORTD = 0x00;
     
     while(1) {
         reading = keypad_to_ascii();
@@ -146,10 +102,10 @@ int main(){
         else if(reading == '*') {
             PORTB = 0x08;
         }
-        else {
+  
+        else
+        {
             PORTB = 0x00;
         }
-        
-        _delay_ms(100);//Do I need a delay?
     }
-}*/
+}
