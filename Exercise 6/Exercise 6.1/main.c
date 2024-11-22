@@ -7,7 +7,6 @@
 
 uint16_t pressed_keys = 0;
 uint8_t ascii[16] = {'*', '0', '#', 'D', '7', '8', '9', 'C', '4', '5', '6', 'B', '1', '2', '3', 'A'};
-//uint16_t pressed_keys_stamos = 0;
 
 uint16_t scan_row(uint8_t row){	 
     uint16_t result = 0;
