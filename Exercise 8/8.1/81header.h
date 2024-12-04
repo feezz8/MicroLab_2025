@@ -60,6 +60,11 @@ typedef enum {
 #include <stdbool.h>
 #include <stdint.h>
 
+
+uint16_t adc_read(void);
+void adc_init(void);
+
+
 void twi_init(void);
 unsigned char twi_readAck(void);
 unsigned char twi_readNak(void);
@@ -86,4 +91,17 @@ void usart_transmit_buffer(uint8_t *buf, int length);
 int usart_receive_buffer(uint8_t *buf, int length);
 uint8_t esp_send_command(uint8_t command_type, uint8_t *argc, int argv);
 
-#endif	/* TWI_PCA_HEADER */
+ void one_wire_transmit_bit(uint8_t input);
+ uint8_t one_wire_receive_byte();
+ void one_wire_transmit_byte(uint8_t input);
+ uint16_t get_temperature_reading();
+ int integer_part(uint16_t input);
+ int decimal_part(uint16_t input);
+ void send_three_to_screen(int input);
+ 
+ uint8_t keypad_to_ascii();
+ uint16_t scan_keypad_rising_edge();
+ uint16_t scan_keypad();
+ 
+ 
+#endif	/* 81HEADER */
